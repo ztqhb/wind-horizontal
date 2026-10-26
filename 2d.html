@@ -1,0 +1,571 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>大气的水平运动 · 风 · 交互式教学</title>
+  <style>
+    * { box-sizing: border-box; font-family: system-ui, 'Segoe UI', Roboto, sans-serif; }
+    body {
+      background: linear-gradient(145deg, #f0f7ff 0%, #dbeafe 100%);
+      margin: 0; min-height: 100vh; display: flex; flex-direction: column;
+      align-items: center; justify-content: center; padding: 20px;
+    }
+    .app {
+      max-width: 1100px; width: 100%; background: rgba(255,255,255,0.7);
+      backdrop-filter: blur(10px); border-radius: 40px;
+      box-shadow: 0 20px 40px rgba(0,30,60,0.2), 0 0 0 1px rgba(255,255,255,0.6) inset;
+      padding: 24px 28px 28px;
+    }
+    h1 {
+      font-size: 1.9rem; font-weight: 600; margin: 0 0 8px 0; color: #0a2a44;
+      display: flex; align-items: center; gap: 10px;
+    }
+    h1 small {
+      font-size: 1rem; font-weight: 400; color: #2c5777;
+      background: #ffffffaa; padding: 4px 12px; border-radius: 40px; margin-left: auto;
+    }
+    .canvas-container {
+      background: #e6f0fa; border-radius: 28px; padding: 12px;
+      box-shadow: inset 0 2px 12px rgba(0,20,40,0.08); margin-bottom: 18px;
+    }
+    canvas {
+      display: block; width: 100%; height: auto; border-radius: 18px;
+      background: #ffffff; box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+    }
+    .controls {
+      display: grid; grid-template-columns: repeat(auto-fit, minmax(210px,1fr));
+      gap: 18px 22px; margin-bottom: 18px; background: #ffffffcc;
+      padding: 18px 20px; border-radius: 28px; backdrop-filter: blur(8px);
+      box-shadow: 0 6px 16px rgba(0,0,0,0.03);
+    }
+    .control-group { display: flex; flex-direction: column; gap: 6px; }
+    .control-group label {
+      font-size: 0.85rem; font-weight: 600; color: #1e3a5f;
+      display: flex; align-items: center; gap: 6px;
+    }
+    .radio-group { display: flex; gap: 12px; flex-wrap: wrap; }
+    .radio-group label {
+      font-weight: 400; font-size: 0.95rem; display: flex; align-items: center;
+      gap: 6px; cursor: pointer; background: #eff6ff; padding: 6px 14px 6px 10px;
+      border-radius: 40px; transition: background 0.2s;
+    }
+    .radio-group label:hover { background: #dbeafe; }
+    input[type="radio"] { accent-color: #2563eb; width: 18px; height: 18px; margin: 0; cursor: pointer; }
+    .slider-container { display: flex; align-items: center; gap: 12px; }
+    input[type="range"] {
+      flex: 1; height: 8px; border-radius: 20px; background: #cbd5e1;
+      -webkit-appearance: none; appearance: none;
+    }
+    input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none; width: 20px; height: 20px; background: #2563eb;
+      border-radius: 50%; box-shadow: 0 2px 8px #2563eb80; cursor: pointer; border: 2px solid white;
+    }
+    .value-badge {
+      min-width: 42px; text-align: center; font-weight: 600; background: #ffffff;
+      padding: 4px 8px; border-radius: 30px; font-size: 0.9rem; color: #0b3b5e;
+    }
+    .button-bar { display: flex; flex-wrap: wrap; align-items: center; gap: 14px; margin-bottom: 16px; }
+    .btn {
+      background: white; border: none; padding: 12px 24px; border-radius: 40px;
+      font-weight: 600; font-size: 0.95rem; color: #0a2a44;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.05), 0 0 0 1px #b7c9e2 inset;
+      cursor: pointer; transition: all 0.15s ease; display: flex; align-items: center; gap: 8px;
+    }
+    .btn-primary {
+      background: #1e4b8c; color: white;
+      box-shadow: 0 8px 18px #1e4b8c40, 0 0 0 1px #ffffff50 inset;
+    }
+    .btn-primary:hover { background: #143a6b; transform: scale(1.02); }
+    .btn-primary:active { transform: scale(0.98); }
+    .btn-outline {
+      background: #ffffffd0; backdrop-filter: blur(4px);
+      box-shadow: 0 2px 8px rgba(0,0,0,0.03), 0 0 0 1px #aac2df inset;
+    }
+    .explanation {
+      background: #ffffffdd; backdrop-filter: blur(8px); padding: 16px 22px;
+      border-radius: 22px; font-size: 1rem; line-height: 1.5; color: #0b2c47;
+      border-left: 8px solid #2563eb; box-shadow: 0 6px 14px rgba(0,0,0,0.02);
+      margin-bottom: 20px; font-weight: 500;
+    }
+    .quiz-area {
+      background: #ffffffd0; backdrop-filter: blur(8px); border-radius: 24px;
+      padding: 18px 24px; display: flex; flex-wrap: wrap; align-items: center;
+      justify-content: space-between; gap: 16px;
+    }
+    .quiz-question {
+      font-weight: 600; color: #0f3b63; font-size: 1.05rem;
+      display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
+    }
+    .quiz-badge {
+      background: #e8f0fe; padding: 6px 16px; border-radius: 40px;
+      font-weight: 500; font-size: 0.9rem; color: #1d4a7a;
+    }
+    .quiz-options { display: flex; gap: 10px; flex-wrap: wrap; }
+    .quiz-option {
+      background: white; border: 2px solid #cbdae9; padding: 8px 20px;
+      border-radius: 40px; font-weight: 600; color: #1e3a5f; cursor: pointer;
+      transition: all 0.15s; font-size: 0.9rem;
+    }
+    .quiz-option:hover { background: #eef5ff; border-color: #2563eb; }
+    .quiz-option.correct { background: #d1fae5; border-color: #10b981; color: #065f46; }
+    .quiz-option.wrong { background: #fee2e2; border-color: #ef4444; color: #991b1b; }
+    .feedback { font-weight: 500; color: #2a5b8a; min-height: 1.8rem; }
+    .legend {
+      display: flex; gap: 20px; flex-wrap: wrap; font-size: 0.8rem;
+      color: #1d3e5e; margin-top: 10px;
+    }
+    .legend-item { display: flex; align-items: center; gap: 6px; }
+    .legend-color { width: 18px; height: 6px; border-radius: 4px; }
+  </style>
+</head>
+<body>
+<a href="index.html" style="position:fixed;top:14px;right:16px;z-index:99;background:rgba(255,255,255,0.9);color:#0a2a44;text-decoration:none;font-size:14px;font-weight:600;padding:8px 16px;border-radius:40px;box-shadow:0 2px 10px rgba(0,0,0,0.08),0 0 0 1px #b7c9e2 inset;backdrop-filter:blur(6px);">🛰 3D 地球版演示 →</a>
+
+<div class="app">
+  <h1>🌬️ 大气的水平运动 · 风 <small>地理 · 交互演示</small></h1>
+
+  <div class="canvas-container">
+    <canvas id="windCanvas" width="900" height="460"></canvas>
+  </div>
+
+  <div class="controls">
+    <div class="control-group">
+      <label>🌍 半球 / 地转偏向力</label>
+      <div class="radio-group">
+        <label><input type="radio" name="hemisphere" value="north" checked> 北半球</label>
+        <label><input type="radio" name="hemisphere" value="south"> 南半球</label>
+        <label><input type="radio" name="hemisphere" value="equator"> 赤道</label>
+      </div>
+    </div>
+    <div class="control-group">
+      <label>🧱 摩擦力</label>
+      <div class="radio-group">
+        <label><input type="radio" name="friction" value="on" checked> 有 (近地面)</label>
+        <label><input type="radio" name="friction" value="off"> 无 (高空)</label>
+      </div>
+    </div>
+    <div class="control-group">
+      <label>🌀 地转偏向力</label>
+      <div class="radio-group">
+        <label><input type="radio" name="coriolis" value="on" checked> 有</label>
+        <label><input type="radio" name="coriolis" value="off"> 无</label>
+      </div>
+    </div>
+    <div class="control-group">
+      <label>⚡ 水平气压梯度力大小</label>
+      <div class="slider-container">
+        <input type="range" id="gradientSlider" min="0.4" max="2.2" value="1.2" step="0.05">
+        <span class="value-badge" id="gradientValue">1.20</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="button-bar">
+    <button class="btn btn-primary" id="demoBtn">▶ 演示 (缓慢偏转)</button>
+    <button class="btn btn-outline" id="stopBtn">⏹ 停止/重置</button>
+    <button class="btn btn-outline" id="resetQuizBtn">🔄 换一题</button>
+    <span style="margin-left:auto; font-size:0.85rem; color:#2d577b;">⏱ 动画10秒，可随时启动/暂停</span>
+  </div>
+
+  <div class="explanation" id="explanationText">当前为北半球近地面风，风向与等压线斜交，向右偏转……</div>
+
+  <div class="legend">
+    <div class="legend-item"><span class="legend-color" style="background:#d63a2f;"></span> 水平气压梯度力</div>
+    <div class="legend-item"><span class="legend-color" style="background:#1e6fdc;"></span> 地转偏向力</div>
+    <div class="legend-item"><span class="legend-color" style="background:#1e9e4a;"></span> 摩擦力</div>
+    <div class="legend-item"><span class="legend-color" style="background:#111; height:4px; width:22px;"></span> 实际风向</div>
+    <div class="legend-item"><span class="legend-color" style="background:#f0b400; height:4px; width:22px;"></span> 等压线</div>
+  </div>
+
+  <!-- 小测验模块 -->
+  <div class="quiz-area">
+    <div class="quiz-question">
+      <span>📋 判断风向偏转</span>
+      <span class="quiz-badge" id="quizCondition">北半球 · 有摩擦力</span>
+    </div>
+    <div class="quiz-options" id="quizOptions">
+      <div class="quiz-option" data-answer="right">向右偏转</div>
+      <div class="quiz-option" data-answer="left">向左偏转</div>
+      <div class="quiz-option" data-answer="none">不偏转</div>
+    </div>
+    <div class="feedback" id="quizFeedback"></div>
+  </div>
+</div>
+
+<script>
+  (function() {
+    const canvas = document.getElementById('windCanvas');
+    const ctx = canvas.getContext('2d');
+    const width = 900, height = 460;
+
+    const isobarX = [200, 450, 700];
+    const pressureValues = ['1020 hPa', '1010 hPa', '1000 hPa'];
+
+    let hemisphere = 'north';
+    let frictionOn = true;
+    let coriolisOn = true;
+    let gradientMagnitude = 1.2;
+
+    // 动画状态
+    let animationId = null;
+    let isAnimating = false;
+    let animStartTime = 0;
+    let animFromAngle = 0;
+    let animToAngle = 0;
+    const ANIM_DURATION = 10000;
+
+    let windAngle = 0;
+    let currentWindAngle = 0;
+
+    let particles = [];
+    const PARTICLE_COUNT = 55;
+
+    function initParticles() {
+      particles = [];
+      for (let i = 0; i < PARTICLE_COUNT; i++) {
+        particles.push({
+          x: Math.random() * width,
+          y: Math.random() * height,
+          speedFactor: 0.4 + Math.random() * 1.0,
+        });
+      }
+    }
+    initParticles();
+
+    // Canvas坐标系 y轴向下：正角度=顺时针=视觉右偏，负角度=逆时针=视觉左偏
+    function computeWindAngle() {
+      const effC = coriolisOn && (hemisphere !== 'equator');
+      if (!frictionOn && effC) {
+        if (hemisphere === 'north') return Math.PI / 2;
+        if (hemisphere === 'south') return -Math.PI / 2;
+        return 0;
+      } else if (frictionOn && effC) {
+        if (hemisphere === 'north') return Math.PI / 4;
+        if (hemisphere === 'south') return -Math.PI / 4;
+        return 0;
+      }
+      return 0;
+    }
+
+    function getForces(angle, magnitude) {
+      const Fg = { x: 1 * magnitude, y: 0 };
+      const Ff = { x: -Math.cos(angle) * (frictionOn ? 0.9 : 0), y: -Math.sin(angle) * (frictionOn ? 0.9 : 0) };
+      const effC = coriolisOn && (hemisphere !== 'equator');
+      let Fc = { x: 0, y: 0 };
+      if (effC) {
+        const perp = angle + (hemisphere === 'north' ? Math.PI / 2 : -Math.PI / 2);
+        const mag = frictionOn ? 0.9 : magnitude;
+        Fc = { x: Math.cos(perp) * mag, y: Math.sin(perp) * mag };
+      }
+      return { Fg, Ff, Fc };
+    }
+
+    function updateParams() {
+      for (let r of document.getElementsByName('hemisphere')) if (r.checked) hemisphere = r.value;
+      for (let r of document.getElementsByName('friction')) if (r.checked) frictionOn = (r.value === 'on');
+      for (let r of document.getElementsByName('coriolis')) if (r.checked) coriolisOn = (r.value === 'on');
+
+      if (hemisphere === 'equator') {
+        coriolisOn = false;
+        document.querySelector('input[name="coriolis"][value="off"]').checked = true;
+      }
+
+      gradientMagnitude = parseFloat(document.getElementById('gradientSlider').value);
+      document.getElementById('gradientValue').textContent = gradientMagnitude.toFixed(2);
+
+      if (!isAnimating) {
+        windAngle = computeWindAngle();
+        currentWindAngle = windAngle;
+      }
+      updateExplanation();
+    }
+
+    function updateExplanation() {
+      const el = document.getElementById('explanationText');
+      const hText = hemisphere === 'north' ? '北半球' : (hemisphere === 'south' ? '南半球' : '赤道');
+      const fText = frictionOn ? '近地面(有摩擦力)' : '高空(无摩擦力)';
+      const cText = (hemisphere === 'equator') ? '无地转偏向力' : (coriolisOn ? '有地转偏向力' : '地转偏向力关闭');
+      let wDesc = '';
+      if (!frictionOn && coriolisOn && hemisphere !== 'equator') {
+        wDesc = '风向与等压线平行';
+      } else if (frictionOn && coriolisOn && hemisphere !== 'equator') {
+        wDesc = '风向与等压线斜交，' + (hemisphere === 'north' ? '向右偏转' : '向左偏转');
+      } else {
+        wDesc = '风向垂直于等压线';
+      }
+      el.innerHTML = `当前为${hText} ${fText}，${cText}，${wDesc}。`;
+    }
+
+    function drawCanvas() {
+      ctx.clearRect(0, 0, width, height);
+
+      // 等压线
+      ctx.lineWidth = 2.5;
+      ctx.strokeStyle = '#f0b400';
+      ctx.setLineDash([8, 6]);
+      for (let x of isobarX) {
+        ctx.beginPath();
+        ctx.moveTo(x, 40);
+        ctx.lineTo(x, height - 40);
+        ctx.stroke();
+      }
+      ctx.setLineDash([]);
+
+      // 等压线数值
+      ctx.font = 'bold 14px "Segoe UI", system-ui, sans-serif';
+      ctx.fillStyle = '#6b5b3e';
+      ctx.shadowColor = '#ffffffaa';
+      ctx.shadowBlur = 6;
+      for (let i = 0; i < isobarX.length; i++) {
+        ctx.fillText(pressureValues[i], isobarX[i] - 40, 70);
+      }
+
+      // H / L
+      ctx.font = 'bold 28px "Segoe UI", system-ui, sans-serif';
+      ctx.fillStyle = '#b45309';
+      ctx.shadowBlur = 8;
+      ctx.fillText('H', isobarX[0] - 25, 120);
+      ctx.fillStyle = '#0e5f8a';
+      ctx.fillText('L', isobarX[1] + 10, 120);
+      ctx.fillText('L', isobarX[2] + 10, 120);
+      ctx.shadowBlur = 0;
+
+      ctx.font = '14px system-ui';
+      ctx.fillStyle = '#6b5b3e';
+      ctx.fillText('等压线', isobarX[0] + 8, height - 20);
+
+      drawParticles();
+
+      const baseX = 450, baseY = height / 2;
+      const angle = currentWindAngle;
+      const forceScale = 70;
+      const { Fg, Ff, Fc } = getForces(angle, gradientMagnitude);
+
+      const windLength = 150;
+      drawArrow(baseX, baseY, angle, windLength, '#111111', 5, true);
+      drawArrow(baseX, baseY, 0, Fg.x * forceScale, '#d63a2f', 4);
+
+      if (frictionOn && (Math.abs(Ff.x) > 0.01 || Math.abs(Ff.y) > 0.01)) {
+        const ffAngle = Math.atan2(Ff.y, Ff.x);
+        const ffMag = Math.hypot(Ff.x, Ff.y);
+        if (ffMag > 0.01) drawArrow(baseX, baseY, ffAngle, ffMag * forceScale, '#1e9e4a', 3.5);
+      }
+
+      if (coriolisOn && hemisphere !== 'equator' && (Math.abs(Fc.x) > 0.01 || Math.abs(Fc.y) > 0.01)) {
+        const fcAngle = Math.atan2(Fc.y, Fc.x);
+        const fcMag = Math.hypot(Fc.x, Fc.y);
+        if (fcMag > 0.01) drawArrow(baseX, baseY, fcAngle, fcMag * forceScale, '#1e6fdc', 3.5);
+      }
+
+      ctx.font = 'bold 14px system-ui';
+      ctx.fillStyle = '#111';
+      ctx.shadowBlur = 0;
+      const tipX = baseX + Math.cos(angle) * (windLength + 14);
+      const tipY = baseY + Math.sin(angle) * (windLength + 14);
+      ctx.fillText('风向', tipX, tipY);
+    }
+
+    function drawArrow(fromX, fromY, angle, length, color, lineWidth, largeHead = false) {
+      if (length < 1) return;
+      const toX = fromX + Math.cos(angle) * length;
+      const toY = fromY + Math.sin(angle) * length;
+
+      ctx.beginPath();
+      ctx.moveTo(fromX, fromY);
+      ctx.lineTo(toX, toY);
+      ctx.strokeStyle = color;
+      ctx.lineWidth = lineWidth;
+      ctx.shadowColor = color + '40';
+      ctx.shadowBlur = 8;
+      ctx.stroke();
+      ctx.shadowBlur = 0;
+
+      const headSize = largeHead ? 16 : 10;
+      const headAngle = Math.PI / 6;
+      const a1 = angle + Math.PI - headAngle;
+      const a2 = angle + Math.PI + headAngle;
+
+      ctx.beginPath();
+      ctx.moveTo(toX, toY);
+      ctx.lineTo(toX + Math.cos(a1) * headSize, toY + Math.sin(a1) * headSize);
+      ctx.lineTo(toX + Math.cos(a2) * headSize, toY + Math.sin(a2) * headSize);
+      ctx.closePath();
+      ctx.fillStyle = color;
+      ctx.shadowBlur = 8;
+      ctx.fill();
+      ctx.shadowBlur = 0;
+    }
+
+    function drawParticles() {
+      const angle = isAnimating ? currentWindAngle : windAngle;
+      const speed = 1.2 + gradientMagnitude * 1.0;
+
+      for (let p of particles) {
+        p.x += Math.cos(angle) * speed * p.speedFactor * 0.5;
+        p.y += Math.sin(angle) * speed * p.speedFactor * 0.5;
+
+        if (p.x < -10) p.x = width + 10;
+        if (p.x > width + 10) p.x = -10;
+        if (p.y < -10) p.y = height + 10;
+        if (p.y > height + 10) p.y = -10;
+
+        const len = 8;
+        const dx = Math.cos(angle) * len;
+        const dy = Math.sin(angle) * len;
+        ctx.beginPath();
+        ctx.moveTo(p.x - dx * 0.5, p.y - dy * 0.5);
+        ctx.lineTo(p.x + dx * 0.5, p.y + dy * 0.5);
+        ctx.strokeStyle = '#1e4b8c25';
+        ctx.lineWidth = 2;
+        ctx.stroke();
+      }
+      ctx.fillStyle = '#1e6fdc30';
+      for (let p of particles) {
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, 1.5, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    }
+
+    // 动画控制
+    function startOrResumeAnimation() {
+      if (isAnimating) return;
+
+      windAngle = computeWindAngle();
+
+      const diff = Math.abs(currentWindAngle - windAngle);
+      if (diff < 0.01) {
+        animFromAngle = 0;
+        currentWindAngle = 0;
+      } else {
+        animFromAngle = currentWindAngle;
+      }
+      animToAngle = windAngle;
+      animStartTime = performance.now();
+      isAnimating = true;
+      document.getElementById('demoBtn').textContent = '⏸ 暂停演示';
+
+      function step(now) {
+        if (!isAnimating) return;
+
+        const elapsed = now - animStartTime;
+        let t = Math.min(elapsed / ANIM_DURATION, 1);
+        const ease = 1 - Math.pow(1 - t, 3);
+        currentWindAngle = animFromAngle + (animToAngle - animFromAngle) * ease;
+
+        if (t < 1) {
+          animationId = requestAnimationFrame(step);
+        } else {
+          isAnimating = false;
+          currentWindAngle = animToAngle;
+          animationId = null;
+          document.getElementById('demoBtn').textContent = '▶ 演示 (缓慢偏转)';
+        }
+      }
+      animationId = requestAnimationFrame(step);
+    }
+
+    function pauseAnimation() {
+      if (animationId) {
+        cancelAnimationFrame(animationId);
+        animationId = null;
+      }
+      isAnimating = false;
+      document.getElementById('demoBtn').textContent = '▶ 继续演示';
+    }
+
+    function resetAnimation() {
+      if (animationId) {
+        cancelAnimationFrame(animationId);
+        animationId = null;
+      }
+      isAnimating = false;
+      windAngle = computeWindAngle();
+      currentWindAngle = windAngle;
+      document.getElementById('demoBtn').textContent = '▶ 演示 (缓慢偏转)';
+    }
+
+    // 主渲染循环
+    function mainLoop() {
+      drawCanvas();
+      requestAnimationFrame(mainLoop);
+    }
+
+    // 小测验
+    let quizHemisphere = 'north', quizFriction = true, quizAnswered = false;
+
+    function generateQuiz() {
+      const opts = ['north', 'south', 'equator'];
+      quizHemisphere = opts[Math.floor(Math.random() * opts.length)];
+      quizFriction = Math.random() < 0.5;
+      document.getElementById('quizCondition').innerText =
+        `${quizHemisphere === 'north' ? '北半球' : (quizHemisphere === 'south' ? '南半球' : '赤道')} · ${quizFriction ? '有摩擦力' : '无摩擦力'}`;
+      document.getElementById('quizFeedback').innerText = '';
+      document.querySelectorAll('.quiz-option').forEach(o => o.classList.remove('correct', 'wrong'));
+      quizAnswered = false;
+    }
+
+    function handleQuizAnswer(selected) {
+      if (quizAnswered) return;
+      const fb = document.getElementById('quizFeedback');
+      let correct;
+      if (quizHemisphere === 'equator') correct = 'none';
+      else if (quizHemisphere === 'north') correct = 'right';
+      else correct = 'left';
+
+      document.querySelectorAll('.quiz-option').forEach(o => {
+        const a = o.dataset.answer;
+        if (a === selected) o.classList.add(a === correct ? 'correct' : 'wrong');
+        if (a === correct) o.classList.add('correct');
+      });
+
+      fb.innerText = (selected === correct) ? '✅ 回答正确！' :
+        `❌ 正确答案是：${correct === 'right' ? '向右偏转' : (correct === 'left' ? '向左偏转' : '不偏转')}`;
+      quizAnswered = true;
+    }
+
+    window.addEventListener('load', () => {
+      updateParams();
+      generateQuiz();
+      requestAnimationFrame(mainLoop);
+
+      document.querySelectorAll('input[name="hemisphere"], input[name="friction"], input[name="coriolis"]').forEach(radio => {
+        radio.addEventListener('change', () => {
+          resetAnimation();
+          if (hemisphere === 'equator') {
+            document.querySelector('input[name="coriolis"][value="off"]').checked = true;
+            coriolisOn = false;
+          }
+          updateParams();
+        });
+      });
+
+      document.getElementById('gradientSlider').addEventListener('input', () => {
+        resetAnimation();
+        updateParams();
+      });
+
+      document.getElementById('demoBtn').addEventListener('click', () => {
+        if (isAnimating) {
+          pauseAnimation();
+        } else {
+          startOrResumeAnimation();
+        }
+      });
+
+      document.getElementById('stopBtn').addEventListener('click', () => {
+        resetAnimation();
+        updateParams();
+      });
+
+      document.querySelectorAll('.quiz-option').forEach(o => {
+        o.addEventListener('click', () => handleQuizAnswer(o.dataset.answer));
+      });
+
+      document.getElementById('resetQuizBtn').addEventListener('click', generateQuiz);
+    });
+  })();
+</script>
+</body>
+</html>
